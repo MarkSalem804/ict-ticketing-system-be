@@ -93,7 +93,7 @@ async function registerUserFirstStep(data) {
 
     return { message: `OTP sent successfully to ${email}. Waiting for verification.` };
   } catch (error) {
-    console.error("Error!", error);
+    console.error("Error!", errPor);
     throw new Error("Error in Process");
   }
 }
