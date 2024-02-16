@@ -2,6 +2,7 @@
 const authenticationDao = require("../DAO/authentication-dao");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
+const bcrypt = require('bcrypt');
 
 function generateOTP(length) {
   const chars = "0123456789";
@@ -62,54 +63,75 @@ async function verifyOTP(email, otp) {
 }
 
 async function registerUserFirstStep(data) {
-  const { email } = data;
+  const { email, firstName, middleName, lastName, password } = data;
 
   try {
+    // Check if user already exists
     const existingUser = await authenticationDao.findUserByEmail(email);
     if (existingUser) {
-      return { message: "User already exists" };
+      throw new Error("User already exists");
     }
 
-    const length = 6;
-    const otp = generateOTP(length);
+    // Generate OTP
+    const otpLength = 6;
+    const otp = generateOTP(otpLength);
 
-    await authenticationDao.updateUserOTP(email, otp);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Create user in the database
+    await authenticationDao.createUser({
+      email,
+      firstName,
+      middleName,
+      lastName,
+      password: hashedPassword,
+      otp,
+    });
+
+    // Send OTP to user via email
     await sendOTP(email, otp);
 
-    return { message: "OTP sent successfully" };
+    return { message: `OTP sent successfully to ${email}. Waiting for verification.` };
   } catch (error) {
     console.error("Error!", error);
     throw new Error("Error in Process");
   }
 }
 
+
+
 async function registerUserSecondStep(data) {
-    const { email, otp } = data;
-  
-    try {
-      // Retrieve user from database using email
-      const user = await authenticationDao.findUserByEmail(email);
-  
-      // Check if user exists and if OTP matches
-      if (!user || user.otp !== otp) {
-        throw new Error("Invalid OTP");
-      }
-  
-      // If OTP is correct, proceed with user registration
-      await authenticationDao.updateUserOTP(email, null); // Clear OTP from database
-  
-      // Proceed with user registration (implementation not shown here)
-  
-      return { message: "User registered successfully" };
-    } catch (error) {
-      console.error("Error!", error);
-      throw new Error("Error in Process");
+  const { email, otp } = data;
+
+  try {
+    // Retrieve user from database using email
+    const user = await authenticationDao.findUserByEmail(email);
+
+    // Check if user exists and if OTP matches
+    if (!user || user.otp !== parseInt(otp)) {
+      throw new Error("Invalid OTP");
     }
+
+    // If OTP is correct, proceed with user registration
+    await authenticationDao.updateUserOTP(email, otp); // Clear OTP from database
+
+    // Proceed with user registration (implementation not shown here)
+
+    return {
+      message: "User registered successfully",
+      data: user
+    };
+  } catch (error) {
+    console.error("Error!", error);
+    throw new Error("Error in Process");
   }
+}
+
+
 
 module.exports = {
   generateOTP,
+  verifyOTP,
   sendOTP,
   registerUserFirstStep,
   registerUserSecondStep,

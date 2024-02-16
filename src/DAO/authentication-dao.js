@@ -30,8 +30,8 @@ async function updateUserOTP(email, otp) {
       email: email,
     },
     data: {
-      otp: parseInt(otp),
-    },
+      otp: otp,
+    }
   });
 }
 
