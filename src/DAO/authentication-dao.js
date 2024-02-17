@@ -1,6 +1,21 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
+
+async function getAllUsers() {
+  try {
+    const user = await prisma.users.findMany();
+
+    return user;
+  } catch (error) {
+    console.error("Error fetching users", error);
+    throw new Error(error);
+  }
+}
+
+
+
+
 async function createUser(data) {
   try {
     data.otp = parseInt(data.otp);
@@ -46,7 +61,23 @@ async function updateUserPassword(email, newPassword) {
   });
 }
 
+async function findUserByOTP(otp) {
+  try {
+    const user = await prisma.users.findFirst({
+      where: {
+        otp: otp,
+      },
+    });
+    return user;
+  } catch (error) {
+    console.error("Error Matching OTP", error);
+    throw new Error(error);
+  }
+}
+
 module.exports = {
+  getAllUsers,
+  findUserByOTP,
   createUser,
   findUserByEmail,
   updateUserOTP,

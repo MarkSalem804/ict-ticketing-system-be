@@ -2,6 +2,20 @@ const express = require("express");
 const authRouter = express.Router();
 const authenticationService = require("../Services/authentication-service");
 
+
+authRouter.get("/getUsers", async (req, res) => {
+  try {
+    const data = await authenticationService.getAll();
+
+    return res.status(201).json(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
+
 authRouter.post("/registerUserFirstStep", async (req, res) => {
   try {
     const data = req.body;

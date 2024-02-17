@@ -1,9 +1,18 @@
-// authentication-service.js
 const authenticationDao = require("../DAO/authentication-dao");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 const bcrypt = require('bcrypt');
 
+
+async function getAll() {
+  try {
+    const users = await authenticationDao.getAllUsers();
+
+    return users;
+  } catch (error) {
+
+  }
+}
 function generateOTP(length) {
   const chars = "0123456789";
   let otp = "";
@@ -98,8 +107,6 @@ async function registerUserFirstStep(data) {
   }
 }
 
-
-
 async function registerUserSecondStep(data) {
   const { email, otp } = data;
 
@@ -127,9 +134,43 @@ async function registerUserSecondStep(data) {
   }
 }
 
+async function loginWithOTP(otp) {
+  try {
+    const user = await authenticationDao.findUserByOTP(otp);
+
+    if (!user) {
+      throw new Error("Invalid OTP");
+    }
+
+    return {
+      message: "User Logged in Successfully",
+      data: user
+    }
+  } catch (error) {
+
+  }
+  // const user = await authenticationDao.findUserByOTP(otp);
+  // if (!user) {
+  //   throw new Error("Invalid OTP");
+  // }
+  // // Log in the user
+  // return { message: "User logged in successfully" };
+}
+
+async function login(email, password) {
+  const user = await authenticationDao.findUserByEmail(email);
+  if (!user || !bcrypt.compareSync(password, user.password)) {
+    throw new Error("Invalid email or password");
+  }
+  return { message: "User logged in successfully" };
+}
+
 
 
 module.exports = {
+  getAll,
+  login,
+  loginWithOTP,
   generateOTP,
   verifyOTP,
   sendOTP,
