@@ -14,8 +14,6 @@ authRouter.get("/getUsers", async (req, res) => {
   }
 });
 
-
-
 authRouter.post("/registerUserFirstStep", async (req, res) => {
   try {
     const data = req.body;
@@ -34,6 +32,20 @@ authRouter.post("/registerUserSecondStep", async (req, res) => {
     const result = await authenticationService.registerUserSecondStep(data);
 
     res.status(200).json(result); // Send the result message
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+authRouter.post("/loginOTP/:otp", async (req, res) => {
+  try {
+    const otp = parseInt(req.params.otp, 10);
+    const ipAddress = req.ip;
+
+    const result = await authenticationService.loginWithOTP(otp, ipAddress);
+
+    res.status(200).json(result);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });

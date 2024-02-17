@@ -2,7 +2,29 @@ const authenticationDao = require("../DAO/authentication-dao");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 const bcrypt = require('bcrypt');
+const jwt = require("jsonwebtoken");
+const { v4: uuidv4 } = require('uuid');
 
+
+function generateOTP(length) {
+  const chars = "0123456789";
+  let otp = "";
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * chars.length);
+    otp += chars[randomIndex];
+  }
+  return otp;
+}
+
+function generateJWTToken(user) {
+  // Extract relevant user information for token payload
+  const payload = {
+    userId: user.userId,
+    // Add any other relevant user data here
+  };
+  // Sign JWT token with a secret key and set expiration time (e.g., 1 hour)
+  return jwt.sign(payload, process.env.JWT_TOKEN, { expiresIn: '1h' });
+}
 
 async function getAll() {
   try {
@@ -13,15 +35,7 @@ async function getAll() {
 
   }
 }
-function generateOTP(length) {
-  const chars = "0123456789";
-  let otp = "";
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * chars.length);
-    otp += chars[randomIndex];
-  }
-  return otp;
-}
+
 
 async function sendOTP(email, otp) {
   const transporter = nodemailer.createTransport({
@@ -59,6 +73,7 @@ async function sendOTP(email, otp) {
   }
 }
 
+
 async function verifyOTP(email, otp) {
   // Retrieve the user from the database using the email
   const user = await authenticationDao.findUserByEmail(email);
@@ -70,6 +85,7 @@ async function verifyOTP(email, otp) {
     return false; // OTP is invalid
   }
 }
+
 
 async function registerUserFirstStep(data) {
   const { email, firstName, middleName, lastName, password } = data;
@@ -107,6 +123,7 @@ async function registerUserFirstStep(data) {
   }
 }
 
+
 async function registerUserSecondStep(data) {
   const { email, otp } = data;
 
@@ -134,40 +151,54 @@ async function registerUserSecondStep(data) {
   }
 }
 
-async function loginWithOTP(otp) {
+
+async function loginWithOTP(otp, ipAddress) {
   try {
     const user = await authenticationDao.findUserByOTP(otp);
 
     if (!user) {
-      throw new Error("Invalid OTP");
+      const message = "Failed Login";
+
+      await authenticationDao.logUserLogin(ipAddress, null, false, message);
+
+      return { message: message, }
     }
 
+    const token = generateJWTToken(user);
+    const message = "User Logged in Successfully";
+
+    await authenticationDao.updateUserToken(user.email, token);
+
+    await authenticationDao.logUserLogin(ipAddress, user.email, true, message, token);
+
     return {
-      message: "User Logged in Successfully",
+      message: message,
+      token: token,
       data: user
     }
   } catch (error) {
-
+    console.error(error);
+    throw new Error("Error in Process");
   }
-  // const user = await authenticationDao.findUserByOTP(otp);
-  // if (!user) {
-  //   throw new Error("Invalid OTP");
-  // }
-  // // Log in the user
-  // return { message: "User logged in successfully" };
-}
+};
+
 
 async function login(email, password) {
-  const user = await authenticationDao.findUserByEmail(email);
-  if (!user || !bcrypt.compareSync(password, user.password)) {
-    throw new Error("Invalid email or password");
+  try {
+    const user = await authenticationDao.findUserByEmail(email);
+    if (!user || !bcrypt.compareSync(password, user.password)) {
+      throw new Error("Invalid email or password");
+    }
+    return { message: "User logged in successfully", data: user };
+  } catch (error) {
+    console.error("Error!", error);
+    throw new Error("Error in Process");
   }
-  return { message: "User logged in successfully" };
 }
-
 
 
 module.exports = {
+  generateJWTToken,
   getAll,
   login,
   loginWithOTP,

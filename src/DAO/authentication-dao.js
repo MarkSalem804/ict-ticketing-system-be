@@ -14,8 +14,6 @@ async function getAllUsers() {
 }
 
 
-
-
 async function createUser(data) {
   try {
     data.otp = parseInt(data.otp);
@@ -65,7 +63,7 @@ async function findUserByOTP(otp) {
   try {
     const user = await prisma.users.findFirst({
       where: {
-        otp: otp,
+        otp: parseInt(otp),
       },
     });
     return user;
@@ -75,7 +73,33 @@ async function findUserByOTP(otp) {
   }
 }
 
+async function updateUserToken(email, token) {
+  return await prisma.users.update({
+    where: {
+      email: email,
+    },
+    data: {
+      token: token,
+    },
+  });
+}
+
+async function logUserLogin(ipAddress, email, isSuccess, message, token) {
+  return await prisma.logs.create({
+    data: {
+      ipAddress: ipAddress,
+      status: isSuccess ? 1 : 0, // Assuming 1 represents a successful login
+      email: email,
+      description: message,
+      token: token
+    },
+  });
+}
+
+
 module.exports = {
+  logUserLogin,
+  updateUserToken,
   getAllUsers,
   findUserByOTP,
   createUser,
