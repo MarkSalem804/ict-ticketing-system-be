@@ -52,4 +52,17 @@ authRouter.post("/loginOTP/:otp", async (req, res) => {
   }
 });
 
+authRouter.post("/logout", async (req, res) => {
+  try {
+    const { email } = req.body;
+    const ipAddress = req.ip; 
+    const result = await authenticationService.logoutUser(email, ipAddress);
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 module.exports = authRouter;

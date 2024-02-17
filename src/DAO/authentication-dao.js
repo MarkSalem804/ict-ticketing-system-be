@@ -97,7 +97,29 @@ async function logUserLogin(ipAddress, email, isSuccess, message, token) {
 }
 
 
+async function logUserLogout(ipAddress, email) {
+  try {
+    const message = "User logged out";
+    const isSuccess = true;
+
+    const user = await prisma.logs.create({
+      data: {
+        ipAddress: ipAddress,
+        email: email,
+        description: message,
+        status: isSuccess ? 0 : 1,
+      },
+    });
+    return user;
+  } catch (error) {
+    console.error("Error Logging out", error);
+    throw new Error(error);
+  }
+}
+
+
 module.exports = {
+  logUserLogout,
   logUserLogin,
   updateUserToken,
   getAllUsers,

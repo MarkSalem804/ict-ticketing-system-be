@@ -196,11 +196,29 @@ async function login(email, password) {
   }
 }
 
+async function logoutUser(email, ipAddress) {
+  try {
+    await authenticationDao.updateUserToken(email, null);
+
+    await authenticationDao.logUserLogout(ipAddress, email);
+
+    return {
+      message: "User logged out successfully",
+      email: email,
+      ipAddress: ipAddress
+    };
+  } catch (error) {
+    console.error("Error logging out user:", error);
+    throw new Error("Error logging out user");
+  }
+}
+
 
 module.exports = {
   generateJWTToken,
   getAll,
   login,
+  logoutUser,
   loginWithOTP,
   generateOTP,
   verifyOTP,
