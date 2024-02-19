@@ -1,7 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
-
 async function getAllUsers() {
   try {
     const user = await prisma.users.findMany();
@@ -12,7 +11,6 @@ async function getAllUsers() {
     throw new Error(error);
   }
 }
-
 
 async function createUser(data) {
   try {
@@ -44,7 +42,7 @@ async function updateUserOTP(email, otp) {
     },
     data: {
       otp: otp,
-    }
+    },
   });
 }
 
@@ -91,11 +89,10 @@ async function logUserLogin(ipAddress, email, isSuccess, message, token) {
       status: isSuccess ? 1 : 0, // Assuming 1 represents a successful login
       email: email,
       description: message,
-      token: token
+      token: token,
     },
   });
 }
-
 
 async function logUserLogout(ipAddress, email) {
   try {
@@ -117,8 +114,22 @@ async function logUserLogout(ipAddress, email) {
   }
 }
 
+async function deleteUser(userId) {
+  try {
+    const user = await prisma.users.delete({
+      where: {
+        userId: parseInt(userId),
+      },
+    });
+    return user;
+  } catch (error) {
+    console.error("Error Deleting user", error);
+    throw new Error(error);
+  }
+}
 
 module.exports = {
+  deleteUser,
   logUserLogout,
   logUserLogin,
   updateUserToken,
